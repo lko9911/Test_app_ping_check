@@ -22,7 +22,7 @@ def get_local_ip():
         if s:
             s.close()
 
-# --- 헬퍼 함수 2: ping3 실행 로직 ---
+# --- 수정된 헬퍼 함수 2: ping3 실행 로직 ---
 def run_ping3(host, count=4):
     """
     ping3 라이브러리를 사용하여 지정된 호스트로 핑을 보냅니다.
@@ -31,9 +31,14 @@ def run_ping3(host, count=4):
     
     st.info(f"**{host}**로 ICMP Echo Request 패킷을 {count}회 보냅니다.")
     
-    # ping3는 root/관리자 권한이 필요할 수 있습니다. (특히 Linux/macOS)
-    if sys.platform != "win32" and ping3.EXCEPTIONS['NeedRootPrivilege']:
-        st.warning("⚠️ **Linux/macOS 사용자 경고:** ICMP Raw Socket 사용을 위해 관리자(root/sudo) 권한이 필요할 수 있습니다.")
+    # ⚠️ 수정된 부분: NeedRootPrivilege 관련 코드를 제거합니다.
+    # if sys.platform != "win32" and ping3.EXCEPTIONS['NeedRootPrivilege']: <--- 이 부분이 오류를 발생시켰습니다.
+    #     st.warning("⚠️ Linux/macOS 사용자 경고...")
+    
+    # 새로운 Streamlit 경고: ping3가 관리자 권한을 요구할 수 있음을 간단히 안내
+    #if sys.platform != "win32":
+    #    st.warning("⚠️ **참고:** Linux/macOS 환경에서는 `ping3` 실행에 관리자 권한(root/sudo)이 필요할 수 있습니다.")
+
 
     for i in range(1, count + 1):
         # ping3.ping() 함수는 응답 시간을 초 단위로 반환합니다.
