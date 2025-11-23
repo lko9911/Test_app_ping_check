@@ -2,3 +2,4 @@ streamlit
 ping3
 pandas
 plotly
+netifaces
