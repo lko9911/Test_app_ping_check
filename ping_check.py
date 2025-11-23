@@ -1,14 +1,15 @@
+import ping3
 import streamlit as st
-import subprocess
-import platform
 import socket
+import sys
 
-# --- 헬퍼 함수 1: 로컬 IP 가져오기 (선택 사항) ---
+# --- 헬퍼 함수 1: 로컬 IP 가져오기 (이전 코드와 동일) ---
 def get_local_ip():
     """현재 로컬 디바이스의 IP 주소를 가져옵니다."""
     s = None
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # 구글 DNS에 연결 시도를 통해 로컬 IP를 확인
         s.connect(('8.8.8.8', 80)) 
         local_ip = s.getsockname()[0]
         return local_ip
@@ -21,92 +22,108 @@ def get_local_ip():
         if s:
             s.close()
 
-
-# --- 헬퍼 함수 2: 핑 실행 로직 ---
-def run_ping(host, count=4):
+# --- 헬퍼 함수 2: ping3 실행 로직 ---
+def run_ping3(host, count=4):
     """
-    지정된 호스트로 핑을 보내고 결과를 문자열로 반환합니다.
+    ping3 라이브러리를 사용하여 지정된 호스트로 핑을 보냅니다.
     """
-    current_os = platform.system().lower()
-
-    if current_os == "windows":
-        # 윈도우: -n 옵션으로 핑 횟수 지정
-        command = ['ping', '-n', str(count), host]
-    else:
-        # 리눅스/macOS (Unix 계열): -c 옵션으로 핑 횟수 지정
-        command = ['ping', '-c', str(count), host]
-
-    # Streamlit에서 결과를 보기 좋게 출력하기 위해 stdout과 stderr을 모두 반환
-    try:
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            timeout=10, 
-            check=False
-        )
-    except Exception as e:
-        return False, f"**오류 발생:** `ping` 명령을 실행할 수 없습니다. ({e})"
-
-    # returncode 0이면 성공, 그 외는 실패
-    success = result.returncode == 0
+    results = []
     
-    # stdout을 보여주고, 에러가 있다면 stderr도 추가로 보여줍니다.
-    output_text = result.stdout
-    if result.stderr:
-        output_text += f"\n\n**stderr (오류 출력):**\n{result.stderr}"
+    st.info(f"**{host}**로 ICMP Echo Request 패킷을 {count}회 보냅니다.")
+    
+    # ping3는 root/관리자 권한이 필요할 수 있습니다. (특히 Linux/macOS)
+    if sys.platform != "win32" and ping3.EXCEPTIONS['NeedRootPrivilege']:
+        st.warning("⚠️ **Linux/macOS 사용자 경고:** ICMP Raw Socket 사용을 위해 관리자(root/sudo) 권한이 필요할 수 있습니다.")
 
-    return success, output_text
-
+    for i in range(1, count + 1):
+        # ping3.ping() 함수는 응답 시간을 초 단위로 반환합니다.
+        # 실패 시 False (패킷 손실), None (타임아웃), 또는 문자열 에러 메시지 반환
+        delay = ping3.ping(host, timeout=2) 
+        
+        status_text = f"시도 {i}/{count}: "
+        
+        if isinstance(delay, float):
+            # 성공적으로 응답을 받은 경우
+            rtt_ms = delay * 1000 # 초 단위를 밀리초(ms)로 변환
+            results.append(rtt_ms)
+            status_text += f"응답 성공! RTT: **{rtt_ms:.2f} ms**"
+            st.text(status_text)
+        elif delay is False:
+            # TTL 만료, 패킷 손실 등 (정상적인 실패)
+            status_text += "응답 실패 (패킷 손실/TTL 만료)"
+            st.warning(status_text)
+        elif delay is None:
+            # 타임아웃
+            status_text += "타임아웃 (응답 없음)"
+            st.error(status_text)
+        elif isinstance(delay, str):
+            # 호스트를 찾을 수 없는 등의 에러
+            status_text += f"오류 발생: {delay}"
+            st.error(status_text)
+            
+    return results
 
 # --- Streamlit 메인 앱 구성 ---
 def main():
-    st.set_page_config(page_title="간단 핑 체커", layout="wide")
-    st.title("🌐 간단 네트워크 핑(Ping) 확인기")
+    st.set_page_config(page_title="Ping3 핑 체커", layout="wide")
+    st.title("📡 `ping3` 라이브러리를 사용한 네트워크 핑 확인기")
     st.markdown("---")
 
-    # 1. 사이드바에 로컬 IP 정보 표시 (선택 사항)
+    # 1. 사이드바에 로컬 IP 정보 표시
     local_ip = get_local_ip()
     st.sidebar.info(f"💡 현재 로컬 IP: **{local_ip}**")
-    st.sidebar.markdown("이 앱은 Streamlit과 `subprocess` 모듈을 사용합니다.")
 
-    # 2. 사용자 입력 위젯
-    # 기본값으로 구글 DNS를 미리 넣어둡니다.
+    # 2. 사용자 입력 및 설정
     target_host = st.text_input(
         "핑을 확인할 호스트 이름 또는 IP 주소를 입력하세요:",
         value="8.8.8.8"
     )
 
-    # 3. 핑 횟수 선택
     ping_count = st.slider(
         "핑 테스트 횟수 선택:",
         min_value=1, 
         max_value=10, 
-        value=4
+        value=5
     )
     
-    # 4. 실행 버튼
-    # 버튼이 눌렸을 때만 핑 테스트를 실행합니다.
+    # 3. 실행 버튼
     if st.button("핑 테스트 실행", type="primary"):
         if not target_host:
             st.error("호스트 주소를 입력해주세요.")
             return
 
-        # 결과 출력을 위한 컨테이너 (스피너가 돌아가게 만듭니다.)
-        with st.spinner(f"**{target_host}**로 핑 테스트를 실행 중입니다... (총 {ping_count}회)"):
-            ping_success, ping_output = run_ping(target_host, count=ping_count)
-
-        # 핑 결과 출력
-        st.markdown("### 📋 핑 테스트 결과")
+        st.markdown("### 📋 핑 테스트 진행")
         
-        if ping_success:
-            st.success(f"✅ **{target_host}** 핑 성공! (응답 있음)")
+        # 4. 핑 테스트 실행
+        results = run_ping3(target_host, count=ping_count)
+
+        # 5. 최종 결과 분석 및 출력
+        st.markdown("### 📊 최종 결과 요약")
+        
+        if not results:
+            st.error(f"**{target_host}**로의 모든 핑 시도가 실패했습니다.")
         else:
-            st.error(f"❌ **{target_host}** 핑 실패. (응답 없음 또는 호스트를 찾을 수 없음)")
+            success_count = len(results)
+            loss_count = ping_count - success_count
+            loss_rate = (loss_count / ping_count) * 100
             
-        # 상세 출력 (ping 명령어의 원본 출력을 코드 블록으로 표시)
-        st.subheader("상세 출력")
-        st.code(ping_output, language='text')
+            # 통계 계산
+            min_rtt = min(results)
+            max_rtt = max(results)
+            avg_rtt = sum(results) / success_count
+            
+            st.success(f"✅ **{target_host}** 테스트 완료!")
+            st.metric(
+                label="패킷 손실률",
+                value=f"{loss_count}/{ping_count} ({loss_rate:.1f}%)",
+                delta=f"-{success_count} 성공"
+            )
+
+            col1, col2, col3 = st.columns(3)
+            col1.metric("최소 응답 시간 (Min RTT)", f"{min_rtt:.2f} ms")
+            col2.metric("최대 응답 시간 (Max RTT)", f"{max_rtt:.2f} ms")
+            col3.metric("평균 응답 시간 (Avg RTT)", f"{avg_rtt:.2f} ms")
+
 
 if __name__ == "__main__":
     main()
