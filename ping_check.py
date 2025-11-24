@@ -5,19 +5,27 @@ import sys
 
 # --- 헬퍼 함수 1: 로컬 IP 가져오기 (이전 코드와 동일) ---
 def get_local_ip():
-    """현재 로컬 디바이스의 IP 주소를 가져옵니다."""
+    """
+    현재 실행 중인 로컬 디바이스의 IP 주소를 가져옵니다.
+    외부 연결 시도를 통해 가장 효율적인 로컬 IP를 얻는 방법입니다.
+    """
     s = None
     try:
+        # 실제 외부 통신을 수행하지 않고 연결만 시도하여
+        # 해당 소켓이 사용할 로컬 IP 주소를 얻어냅니다.
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # 구글 DNS에 연결 시도를 통해 로컬 IP를 확인
+        # 구글 DNS 서버에 연결(Connect)을 시도합니다.
+        # 실제 데이터는 보내지 않으므로 안전하며, NAT 환경에서 정확한 내부 IP를 얻을 수 있습니다.
         s.connect(('8.8.8.8', 80)) 
         local_ip = s.getsockname()[0]
         return local_ip
     except Exception:
+        # 연결 실패 시(예: 네트워크 연결 없음), 호스트 이름으로 시도해봅니다.
+        # 이는 127.0.0.1 (루프백)을 반환할 가능성이 높습니다.
         try:
             return socket.gethostbyname(socket.gethostname())
         except:
-            return "127.0.0.1" 
+            return "127.0.0.1" # 최후의 수단
     finally:
         if s:
             s.close()
