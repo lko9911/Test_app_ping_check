@@ -1,9 +1,11 @@
+# ip 주소를 반환하고 핑 테스트를 수행하여 결과를 그래프로 시각화하는 프로그램
+# 단, 도커 같은 가상 환경이 아닌 로컬 디바이스에서 실행해야 함 (도커의 경우 도커 자체의 ip를 반환해 원하는 결과가 나올 수 없음)
+
 import socket
 import ping3
 import pandas as pd              
 import plotly.express as px      
 import time
-import sys
 
 def get_local_ip():
     
@@ -81,26 +83,25 @@ def plotly_ping_and_graph(host, count=15):
         
         title={
             'text': f"로컬 디바이스 Ping 지연 시간 분석: {host}", 
-            'y': 0.95, # Y 위치 (0.95는 상단에 가깝게)
-            'x': 0.5, # X 위치 (0.5는 중앙)
-            'xanchor': 'center', # 텍스트의 앵커 포인트를 중앙으로 설정
-            'yanchor': 'top', # 텍스트의 앵커 포인트를 상단으로 설정
+            'y': 0.95, 
+            'x': 0.5, 
+            'xanchor': 'center', 
+            'yanchor': 'top', 
             'font': {
-                'size': 24, # 💡 크기를 살짝 키움 (기본값보다 크게)
-                # 'family': 'Courier New, monospace', # 💡 글꼴 변경 시도 (CSS 호환 폰트만 가능)
+                'size': 24, 
                 'color': 'white'
             }
         },
         
         font={
-            'family': 'Arial, sans-serif', # Plotly에서 안정적인 sans-serif 계열 사용
+            'family': 'Arial, sans-serif', 
             'color': 'white'
         }
     )
 
     fig.update_traces(
         hovertemplate="시도: %{x}<br>지연 시간: %{y:.5f} ms<extra></extra>",
-        line=dict(shape='spline', smoothing=1) # 'spline'으로 부드러운 곡선, smoothing 값으로 곡률 조절
+        line=dict(shape='spline', smoothing=1) 
     )
 
     fig.add_hline(
@@ -111,15 +112,11 @@ def plotly_ping_and_graph(host, count=15):
         annotation_position="top right"
     )
 
-    # 💡 업데이트 사항 2: 배경을 어둡게 (dark template)
     fig.update_layout(
         xaxis=dict(tickmode='linear', dtick=1, range=[0.5, count + 0.5]),
         yaxis_title="지연 시간 (ms)",
         hovermode="x unified",
-        template="plotly_dark", # 'plotly_dark' 템플릿 사용
-        # 배경색을 더 어둡게 하고 싶다면 paper_bgcolor, plot_bgcolor 설정 가능
-        # paper_bgcolor='rgba(0,0,0,1)',  # 전체 배경색
-        # plot_bgcolor='rgba(0,0,0,1)'   # 그래프 영역 배경색
+        template="plotly_dark", 
     )
     
     fig.show()
