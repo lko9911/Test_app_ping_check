@@ -129,7 +129,7 @@ if __name__ == "__main__":
     local_ip_address = get_local_ip()
     
     print("--- 로컬 디바이스 정보 ---")
-    print(f"자동 감지된 로컬 IP 주소: **{local_ip_address}**")
+    print(f"자동 감지된 로컬 IP 주소: {local_ip_address}")
     print("----------------------------\n")
     
     plotly_ping_and_graph(local_ip_address, count=15)
