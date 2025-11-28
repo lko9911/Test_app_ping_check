@@ -48,9 +48,9 @@ python Ping_Check_test.py
 <br>
 
 ## 📁 파일 구조
-ping_test.py         # 메인 실행 파일
+<pre><code>ping_test.py         # 메인 실행 파일
 requirements.txt     # 패키지 목록
-README.md            # 프로젝트 설명 파일
+README.md            # 프로젝트 설명 파일</code></pre>
 <br>
 ## 📊 결과 예시
 
