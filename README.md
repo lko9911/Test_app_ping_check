@@ -52,6 +52,7 @@ python Ping_Check_test.py
 requirements.txt     # 패키지 목록
 README.md            # 프로젝트 설명 파일</code></pre>
 <br>
+
 ## 📊 결과 예시
 
 <img width="1505" height="902" alt="스크린샷 2025-11-28 102025" src="https://github.com/user-attachments/assets/cac35afd-2be4-451a-9720-230ac560e42e" /><br>
